@@ -1,0 +1,32 @@
+name: Repository validation
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: kovan-validate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  repository-integrity:
+    name: Repository integrity (not product tests)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Check publication files
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          for name in ("README.md", "LICENSE", "SECURITY.md", "CONTRIBUTING.md", "docs/architecture.md"):
+              p = Path(name)
+              assert p.is_file() and p.stat().st_size > 0, name
+          content = Path("LICENSE").read_text()
+          assert "Apache License" in content and "Version 2.0" in content
+          print("Repository integrity OK; not application tests")
+          PY
