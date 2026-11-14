@@ -67,6 +67,11 @@ class DockerBoundaryTest(unittest.TestCase):
         self.assertIn("privileged mode not explicitly disabled", issues)
         self.assertIn("added Linux capabilities are forbidden", issues)
 
+    def test_unicode_uid_fails_closed(self):
+        obj = baseline()
+        obj["Config"]["User"] = "²"
+        self.assertIn("explicit numeric non-root UID required", audit_container(obj))
+
     def test_missing_cap_drop_and_no_new_privileges(self):
         obj = baseline()
         obj["HostConfig"]["CapDrop"] = []
