@@ -121,10 +121,13 @@ def authenticate_receipt(
         claim = Publication(**receipt["claim"])
     except TypeError as exc:
         raise ValueError("unexpected handoff claim fields") from exc
-    claim.validate(int(time.time()) if now is None else now)
-    expected = hmac.new(
-        controller_key, _payload(claim), hashlib.sha256
-    ).hexdigest()
+    try:
+        claim.validate(int(time.time()) if now is None else now)
+        expected = hmac.new(
+            controller_key, _payload(claim), hashlib.sha256
+        ).hexdigest()
+    except (TypeError, AttributeError, ValueError) as exc:
+        raise ValueError("invalid handoff claim schema") from exc
     if not hmac.compare_digest(receipt["mac"], expected):
         raise ValueError("untrusted or modified handoff receipt")
     return claim
@@ -166,6 +169,27 @@ def _same_publication(github: Reader, claim: Publication) -> bool:
     )
 
 
+
+def attest_after_publication(
+    claim: Publication,
+    controller_key: bytes,
+    github: Reader,
+    *,
+    now: int | None = None,
+) -> dict[str, Any]:
+    """Preferred trusted-controller API after GitHub returns the Draft PR.
+
+    Re-read the independently created GitHub objects before issuing a signed
+    receipt. A receipt remains a controller attestation; this function does
+    not prove which program created the published bytes.
+    """
+    _key(controller_key)
+    claim.validate(int(time.time()) if now is None else now)
+    if not _same_publication(github, claim):
+        raise ValueError("cannot attest a GitHub publication that does not match")
+    return mint_receipt(claim, controller_key, now=now)
+
+
 def reconcile(
     receipt: object,
     controller_key: bytes,
@@ -194,7 +218,7 @@ def reconcile(
     reasons: list[str] = outcome["reasons"]  # type: ignore[assignment]
     try:
         claim = authenticate_receipt(receipt, controller_key, now=now)
-    except ValueError:
+    except (ValueError, TypeError, AttributeError):
         reasons.append("invalid, expired or unauthenticated receipt")
         return outcome
 
