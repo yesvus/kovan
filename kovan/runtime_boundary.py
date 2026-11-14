@@ -49,7 +49,7 @@ def audit_container(inspect: object) -> list[str]:
 
     user = config.get("User")
     uid = user.split(":", 1)[0] if isinstance(user, str) else ""
-    if not uid.isdecimal() or int(uid) == 0:
+    if not uid.isascii() or not uid.isdecimal() or int(uid) == 0:
         problems.append("explicit numeric non-root UID required")
 
     network = host.get("NetworkMode")
