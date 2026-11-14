@@ -6,7 +6,7 @@ import json
 import unittest
 
 from kovan.handoff import (
-    Publication, authenticate_receipt, mint_receipt, reconcile,
+    Publication, attest_after_publication, authenticate_receipt, mint_receipt, reconcile,
 )
 
 
@@ -275,6 +275,34 @@ class HandoffTests(unittest.TestCase):
         receipt["claim"].pop("automation_id")
         with self.assertRaises(ValueError):
             authenticate_receipt(receipt, KEY, now=NOW)
+
+    def test_only_attest_after_exact_live_github_publication(self):
+        github = FakeGitHub()
+        result = attest_after_publication(publication(), KEY, github, now=NOW)
+        self.assertEqual(authenticate_receipt(result, KEY, now=NOW), publication())
+        self.assertEqual(len(github.calls), 2)
+        github.pr["head"]["sha"] = "b" * 40
+        with self.assertRaisesRegex(ValueError, "cannot attest"):
+            attest_after_publication(publication(), KEY, github, now=NOW)
+
+    def test_malformed_signed_receipt_types_fail_closed_before_io(self):
+        malformed = (
+            {"repo": None},
+            {"repo": 1},
+            {"branch": 1},
+            {"head_sha": 1},
+            {"profile_id": None},
+        )
+        for change in malformed:
+            with self.subTest(change=change):
+                r = signed()
+                r["claim"].update(change)
+                github, upstream = FakeGitHub(), FakeOpenHands()
+                out = reconcile(r, KEY, github, upstream, upstream,
+                                (CHECK,), now=NOW)
+                self.assertFalse(out["receipt_authenticated"])
+                self.assertEqual(github.calls, [])
+                self.assertEqual(upstream.calls, [])
 
     def test_receipt_is_not_interpreted_as_a_merge_grant(self):
         out = self.reconcile()
