@@ -30,10 +30,20 @@ def write_fixture():
     root = Path(os.environ.get("KOVAN_FIXTURE_ROOT", "/projects"))
     if not root.is_dir() or root.is_symlink():
         raise OSError("artifact workspace is unavailable")
-    target_dir = root / ARTIFACT.parent
-    target_dir.mkdir(parents=True, exist_ok=True)
+    # Refuse intermediate symlinks before creating anything below them.
+    # The disposable workspace is fresh and not shared with hostile processes.
+    pilot = root / "pilot"
+    if pilot.is_symlink():
+        raise OSError("pilot workspace symlink forbidden")
+    pilot.mkdir(exist_ok=True)
+    if pilot.is_symlink():
+        raise OSError("pilot workspace symlink forbidden")
+    target_dir = pilot / "issue-1"
     if target_dir.is_symlink():
-        raise OSError("artifact directory must not be a symlink")
+        raise OSError("artifact directory symlink forbidden")
+    target_dir.mkdir(exist_ok=True)
+    if target_dir.is_symlink():
+        raise OSError("artifact directory symlink forbidden")
     path = root / ARTIFACT
     try:
         with path.open("xb") as stream:
