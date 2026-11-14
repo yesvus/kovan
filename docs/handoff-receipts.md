@@ -109,3 +109,29 @@ to run tools, add secrets, merge or deploy.
 
 **No production agent dispatch, GitHub writeback, merge, deployment,
 scheduled worker, or billable model invocation is part of this PR.**
+
+## v2: exact artifact bytes, not just a PR reference
+
+The Draft PR #7 implementation also signs a bounded
+`artifact_path`, `artifact_size` and `artifact_sha256` in a
+**version-2** receipt. The trusted controller must first hash the
+candidate bytes with `capture_candidate()`, then publish and read the
+same file at the exact GitHub HEAD commit. The
+`attest_after_publication()` and `reconcile()` functions refuse to
+accept mismatching contents, type, byte count, path or SHA-256.
+
+For this first pilot, the allowed artifact is one issue-scoped Markdown
+file under `pilot/issue-N/`, no larger than 64 KiB. This is a deliberate
+safety limit, not a complete Git tree/code review implementation.
+
+A real no-network Docker worker generated a harmless 232-byte file,
+which was published through a separate controller into public
+[Draft PR #8](https://github.com/yesvus/kovan/pull/8).
+See [artifact publication smoke](artifact-pilot.md) for the exact
+commit/hash and negative-test results.
+
+**Critical:** Matching bytes establishes that the controller-published
+file equals its recorded candidate bytes, not that an ACP or LLM agent
+authored it. The pilot uses a disposable, temporary HMAC key; production
+key lifecycle, durable audit, full artifact/tree verification and
+human delivery approval remain unimplemented.
