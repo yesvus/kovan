@@ -1,7 +1,7 @@
 """Offline tests for signed publication receipts and independent reconciliation."""
 
-from dataclasses import replace
-import copy
+import base64
+import hashlib
 import json
 import unittest
 
@@ -23,6 +23,9 @@ AUTOMATION = "11111111-1111-4111-8111-111111111111"
 RUN = "22222222-2222-4222-8222-222222222222"
 CONVERSATION = "44444444-4444-4444-8444-444444444444"
 CHECK = "CI required check"
+ARTIFACT_PATH = "pilot/issue-1/smoke.md"
+ARTIFACT_BYTES = b"# Kovan isolated fixture\n\nNo model inference.\n"
+ARTIFACT_DIGEST = hashlib.sha256(ARTIFACT_BYTES).hexdigest()
 
 
 def publication(**changes):
@@ -37,6 +40,9 @@ def publication(**changes):
         automation_id=AUTOMATION,
         run_id=RUN,
         profile_id=PROFILE,
+        artifact_path=ARTIFACT_PATH,
+        artifact_size=len(ARTIFACT_BYTES),
+        artifact_sha256=ARTIFACT_DIGEST,
         issued_at=NOW - 30,
         expires_at=NOW + 300,
     )
@@ -68,6 +74,11 @@ class FakeGitHub:
             "base": {"ref": "main", "repo": {"full_name": REPO}},
             "user": {"login": "kovan-publisher[bot]"},
         }
+        self.artifact = {
+            "type": "file", "path": ARTIFACT_PATH,
+            "encoding": "base64", "size": len(ARTIFACT_BYTES),
+            "content": base64.b64encode(ARTIFACT_BYTES).decode("ascii"),
+        }
         self.checks = {
             "total_count": 1,
             "check_runs": [{
@@ -81,6 +92,8 @@ class FakeGitHub:
         self.calls.append(path)
         if "/issues/" in path:
             return self.issue
+        if "/contents/" in path:
+            return self.artifact
         if "/pulls/" in path:
             return self.pr
         if "/check-runs?" in path:
@@ -140,7 +153,7 @@ class HandoffTests(unittest.TestCase):
 
     def test_signed_controller_receipt_is_authenticated(self):
         receipt = signed()
-        self.assertEqual(receipt["version"], 1)
+        self.assertEqual(receipt["version"], 2)
         self.assertEqual(len(receipt["mac"]), 64)
         self.assertEqual(
             authenticate_receipt(receipt, KEY, now=NOW), publication()
@@ -163,7 +176,7 @@ class HandoffTests(unittest.TestCase):
         self.assertTrue(out["publication_evidence_consistent"])
         self.assertFalse(out["delivery_authorized"])
         self.assertFalse(out["agent_authorship_proven"])
-        self.assertEqual(len(github.calls), 5)
+        self.assertEqual(len(github.calls), 6)
         self.assertNotIn(upstream.final["response"], json.dumps(out))
 
     def test_tampered_receipt_blocked_before_any_api_request(self):
@@ -280,7 +293,7 @@ class HandoffTests(unittest.TestCase):
         github = FakeGitHub()
         result = attest_after_publication(publication(), KEY, github, now=NOW)
         self.assertEqual(authenticate_receipt(result, KEY, now=NOW), publication())
-        self.assertEqual(len(github.calls), 2)
+        self.assertEqual(len(github.calls), 3)
         github.pr["head"]["sha"] = "b" * 40
         with self.assertRaisesRegex(ValueError, "cannot attest"):
             attest_after_publication(publication(), KEY, github, now=NOW)
@@ -303,6 +316,39 @@ class HandoffTests(unittest.TestCase):
                 self.assertFalse(out["receipt_authenticated"])
                 self.assertEqual(github.calls, [])
                 self.assertEqual(upstream.calls, [])
+
+    def test_artifact_content_mismatch_blocks_provenance(self):
+        github = FakeGitHub()
+        github.artifact["content"] = base64.b64encode(
+            b"# malicious change\n"
+        ).decode("ascii")
+        github.artifact["size"] = len(b"# malicious change\n")
+        result = self.reconcile(github=github)
+        self.assertTrue(result["receipt_authenticated"])
+        self.assertTrue(result["github_publication_matches"])
+        self.assertFalse(result["artifact_bytes_match"])
+        self.assertFalse(result["publication_evidence_consistent"])
+
+    def test_artifact_digest_cannot_be_minted_from_wrong_live_bytes(self):
+        github = FakeGitHub()
+        github.artifact["content"] = base64.b64encode(
+            b"# different content\n"
+        ).decode("ascii")
+        github.artifact["size"] = len(b"# different content\n")
+        with self.assertRaisesRegex(ValueError, "artifact bytes"):
+            attest_after_publication(publication(), KEY, github, now=NOW)
+
+    def test_claim_must_pin_valid_issue_scoped_sha256_artifact(self):
+        for modification in (
+            {"artifact_path": "private/secrets.md"},
+            {"artifact_path": "pilot/issue-2/smoke.md"},
+            {"artifact_sha256": "00"},
+            {"artifact_size": 0},
+            {"artifact_size": 99999999},
+        ):
+            with self.subTest(modification=modification):
+                with self.assertRaises(ValueError):
+                    mint_receipt(publication(**modification), KEY, now=NOW)
 
     def test_receipt_is_not_interpreted_as_a_merge_grant(self):
         out = self.reconcile()
