@@ -4,6 +4,9 @@
 # remote agent credentials, production Canvas reuse or host bind mounts.
 set -euo pipefail
 
+# Optional controller-only host capture, never a mount inside the worker.
+KOVAN_ACP_OUTPUT="${KOVAN_ACP_OUTPUT:-}"
+
 if [[ ! -f tests/fixtures/acp_artifact_agent.py ]]; then
   echo "Run from the Kovan repository root." >&2
   exit 2
@@ -154,3 +157,14 @@ print("ACP_ARTIFACT_SHA256", hashlib.sha256(raw).hexdigest())
 print("ACP_FINAL_RESPONSE_VERIFIED=true")
 print("DISPOSABLE_ACP_SMOKE_SUCCESS=true")
 PY
+
+if [[ -n "$KOVAN_ACP_OUTPUT" ]]; then
+  if [[ -e "$KOVAN_ACP_OUTPUT" || -L "$KOVAN_ACP_OUTPUT" ]]; then
+    echo "Refusing to replace an existing captured artifact" >&2
+    exit 2
+  fi
+  umask 077
+  docker exec "$name" cat /projects/pilot/issue-1/acp.md > "$KOVAN_ACP_OUTPUT"
+  echo "CONTROLLER_CAPTURE_SHA256=$(sha256sum "$KOVAN_ACP_OUTPUT" | cut -d' ' -f1)"
+  echo "CONTROLLER_CAPTURE_BYTES=$(wc -c < "$KOVAN_ACP_OUTPUT")"
+fi
