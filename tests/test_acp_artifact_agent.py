@@ -127,6 +127,18 @@ class ACPArtifactFixtureTests(unittest.TestCase):
             self.assertEqual(json.loads(result.stdout)["error"]["code"], -32000)
             self.assertEqual(secret.read_bytes(), b"do not touch")
 
+    def test_intermediate_symlink_is_not_followed(self):
+        with tempfile.TemporaryDirectory() as root:
+            with tempfile.TemporaryDirectory() as outside:
+                (Path(root) / "pilot").symlink_to(
+                    Path(outside), target_is_directory=True
+                )
+                result = exchange(root, [request(1, "session/prompt")])
+                reply = json.loads(result.stdout)
+                self.assertEqual(reply["error"]["code"], -32000)
+                self.assertEqual(list(Path(outside).iterdir()), [])
+
+
 
 if __name__ == "__main__":
     unittest.main()
