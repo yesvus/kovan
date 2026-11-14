@@ -25,5 +25,5 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m unittest discover -s tests -p 'test_pr_evidence.py' -v
+          python3 -m unittest discover -s tests -p 'test_*.py' -v
           python3 -m compileall -q kovan tests
