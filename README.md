@@ -18,7 +18,9 @@ Kovan aims to connect task intake, isolated coding agents, independently verifie
 
 ## Current status
 
-This repository contains publication scaffolding, a design outline, security and contribution policies, and credential-free CI for repository integrity. Functional application code will be extracted only after provenance and security reviews. There is **no production release**.
+The first pre-alpha, standard-library Python checks now include a **read-only Docker worker boundary preflight** and a credential-free **ACP protocol echo fixture**. They are tested on public GitHub-hosted CI, but they are **not a production-ready orchestrator** or evidence of a live agent run. There is still no installable Kovan server, GitHub delivery controller, or production release.
+
+Run the offline checks with `python3 -m unittest discover -s tests -p 'test_*.py' -v` and see [developer smoke tests](docs/developer-smoke.md) for scope and limitations. Implementation of the remaining community core is tracked in [issue #1](https://github.com/yesvus/kovan/issues/1).
 
 See [architecture boundaries](docs/architecture.md), [contribution guidelines](CONTRIBUTING.md) and [security policy](SECURITY.md).
 

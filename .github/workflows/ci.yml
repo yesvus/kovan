@@ -9,6 +9,20 @@ concurrency:
   group: kovan-validate-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
+  offline-core-tests:
+    name: Offline core and ACP contract tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Run Python standard-library tests (no secrets or network)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_*.py' -v
+          python3 -m compileall -q kovan tests
   repository-integrity:
     name: Repository integrity (not product tests)
     runs-on: ubuntu-24.04
