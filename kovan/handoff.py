@@ -17,11 +17,12 @@ import time
 from dataclasses import asdict, dataclass
 from typing import Any, Protocol
 
+from kovan.artifact_evidence import Artifact, match_committed_bytes
 from kovan.openhands_adapter import RunIdentity, corroborate
 from kovan.pr_evidence import Policy
 
-_VERSION = 1
-_DOMAIN = b"kovan/controller-handoff/v1\x00"
+_VERSION = 2
+_DOMAIN = b"kovan/controller-handoff/v2\x00"
 _MAX_AGE_SECONDS = 3600
 _BRANCH = re.compile(r"kovan/issue-[1-9][0-9]*-[a-z0-9][a-z0-9-]{0,39}\Z")
 _LOGIN = re.compile(r"[A-Za-z0-9][A-Za-z0-9-]{0,38}(?:\[bot\])?\Z")
@@ -44,6 +45,9 @@ class Publication:
     automation_id: str
     run_id: str
     profile_id: str
+    artifact_path: str
+    artifact_size: int
+    artifact_sha256: str
     issued_at: int
     expires_at: int
 
@@ -51,6 +55,8 @@ class Publication:
         # Reuse the public core's explicit repository and SHA validators.
         Policy(self.repo, self.pr_number, self.head_sha, ("pinned check",)).validate()
         RunIdentity(self.automation_id, self.run_id, self.profile_id).validate()
+        Artifact(self.artifact_path, self.artifact_size,
+                 self.artifact_sha256).validate(self.issue_number)
         if type(self.issue_number) is not int or self.issue_number < 1:
             raise ValueError("positive issue number required")
         if not isinstance(self.branch, str) or not _BRANCH.fullmatch(self.branch):
@@ -187,6 +193,12 @@ def attest_after_publication(
     claim.validate(int(time.time()) if now is None else now)
     if not _same_publication(github, claim):
         raise ValueError("cannot attest a GitHub publication that does not match")
+    if not match_committed_bytes(
+        github, claim.repo, claim.head_sha,
+        Artifact(claim.artifact_path, claim.artifact_size, claim.artifact_sha256),
+        issue_number=claim.issue_number,
+    ):
+        raise ValueError("cannot attest artifact bytes not present at pinned Git SHA")
     return mint_receipt(claim, controller_key, now=now)
 
 
@@ -208,6 +220,7 @@ def reconcile(
     outcome: dict[str, object] = {
         "receipt_authenticated": False,
         "github_publication_matches": False,
+        "artifact_bytes_match": False,
         "execution_observed": False,
         "checks_verified": False,
         "publication_evidence_consistent": False,
@@ -228,6 +241,14 @@ def reconcile(
             reasons.append("GitHub issue or Draft PR mismatches controller receipt")
             return outcome
         outcome["github_publication_matches"] = True
+        if not match_committed_bytes(
+            github, claim.repo, claim.head_sha,
+            Artifact(claim.artifact_path, claim.artifact_size, claim.artifact_sha256),
+            issue_number=claim.issue_number,
+        ):
+            reasons.append("pinned GitHub artifact bytes do not match receipt")
+            return outcome
+        outcome["artifact_bytes_match"] = True
         combined = corroborate(
             automation,
             agent_server,
@@ -249,6 +270,7 @@ def reconcile(
         outcome["publication_evidence_consistent"] = (
             outcome["receipt_authenticated"]
             and outcome["github_publication_matches"]
+            and outcome["artifact_bytes_match"]
             and outcome["execution_observed"]
             and outcome["checks_verified"]
         )
