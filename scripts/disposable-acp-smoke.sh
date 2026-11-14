@@ -164,7 +164,10 @@ if [[ -n "$KOVAN_ACP_OUTPUT" ]]; then
     exit 2
   fi
   umask 077
+  # Fail atomically if another process creates the capture path after check.
+  set -C
   docker exec "$name" cat /projects/pilot/issue-1/acp.md > "$KOVAN_ACP_OUTPUT"
+  set +C
   echo "CONTROLLER_CAPTURE_SHA256=$(sha256sum "$KOVAN_ACP_OUTPUT" | cut -d' ' -f1)"
   echo "CONTROLLER_CAPTURE_BYTES=$(wc -c < "$KOVAN_ACP_OUTPUT")"
 fi
