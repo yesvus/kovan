@@ -209,7 +209,7 @@ class HandoffTests(unittest.TestCase):
         self.assertEqual(github.calls, [])
 
     def test_unsupported_receipt_version_and_malformed_mac_block(self):
-        for change in ({"version": 2}, {"mac": "x" * 64}):
+        for change in ({"version": 1}, {"mac": "x" * 64}):
             with self.subTest(change=change):
                 receipt = signed()
                 receipt.update(change)
