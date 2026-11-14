@@ -169,7 +169,7 @@ class OpenHandsAdapterTests(unittest.TestCase):
 
     def test_malformed_run_page_blocks(self):
         for page in (
-            {"total": 3, "runs": [{}]},
+            {"total": 2, "runs": [{}, {}, {}]},
             {"total": -1, "runs": []},
             {"total": 101, "runs": [None] * 101},
             {"runs": []},
@@ -185,7 +185,7 @@ class OpenHandsAdapterTests(unittest.TestCase):
             observe_run(FakeAPI(), FakeAPI(), RunIdentity("invalid", RUN, PROFILE))
         with self.assertRaises(ValueError):
             observe_run(FakeAPI(), FakeAPI(), RunIdentity(
-                AUTOMATION.upper(), RUN, PROFILE,
+                "AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA", RUN, PROFILE,
             ))
 
     def test_independent_github_conjunction_never_authorizes_delivery(self):
