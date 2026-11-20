@@ -1,0 +1,12 @@
+{
+  "cos_session_id": "",
+  "cos_title_prefix": "ops-CoS",
+  "seat_title_prefix": "lead:",
+  "exclude_titles": [],
+  "cooldown_seconds": 120,
+  "opencode_url": "http://127.0.0.1:4096",
+  "password_env": "OPENCODE_SERVER_PASSWORD",
+  "password_file": "",
+  "state_file": "~/.cache/kovan-lead-watcher-state.json",
+  "log_file": "~/.cache/kovan-lead-watcher.log"
+}
