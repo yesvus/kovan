@@ -1,33 +1,75 @@
 # Kovan
 
-**Open-source, self-hostable policy and delivery verification for AI-assisted software engineering.**
+**Organization as code for autonomous engineering teams.**
 
-> **Status: pre-alpha / clean core extraction.** This repository intentionally starts with new Git history. The reusable application implementation has **not** been migrated or released. There is no installable Kovan server or proven end-to-end delivery workflow here yet.
+Define agent roles, ownership, delegation and coordination in your repository. Bring your own agent runtime, tools and automation.
 
-Kovan aims to connect task intake, isolated coding agents, independently verified Git/CI/review evidence, human decisions, and authorized delivery—without replacing established agent harnesses, workflow engines, Git hosting, CI or GitOps.
+Kovan is a lightweight convention, not another agent harness or orchestration server.
 
-## Intended open-source core
+```mermaid
+flowchart TD
+    O[Owner] <--> S[Steward]
+    S <--> C[Repository Chief of Staff]
+    C <--> L1[Platform Lead]
+    C <--> L2[Application Lead]
+    C <--> L3[Security Lead]
+    L1 --> A1[Ephemeral subagents]
+    L2 --> A2[Ephemeral subagents]
+    L3 --> A3[Ephemeral subagents]
+```
 
-- Canonical work and run state, independent of any chat conversation.
-- Scoped permissions, explicit authorization, and durable human decisions.
-- Replaceable backlog and coding-agent runtime adapters.
-- Independent verification of PR, CI, review and delivery evidence.
-- Self-hostable operation without mandatory proprietary cloud services.
+Persistent leadership. Ephemeral execution. Human governance.
 
-**These are product goals, not currently shipped features.**
+## Quick start
 
-## Current status
+Add a small set of Markdown role definitions:
 
-This repository contains publication scaffolding, a design outline, security and contribution policies, and credential-free CI for repository integrity. Functional application code will be extracted only after provenance and security reviews. There is **no production release**.
+```text
+AGENTS.md
+.kovan/
+  cos.md
+  leads/
+    platform.md
+    application.md
+    security.md
+```
 
-See [architecture boundaries](docs/architecture.md), [contribution guidelines](CONTRIBUTING.md) and [security policy](SECURITY.md).
+Use [the specification](SPEC.md) and [the minimal example](examples/minimal/README.md) to bootstrap roles in your existing agent runtime. The runtime must explicitly load the approved role and repository instructions; Kovan does not provide automatic discovery or session management.
 
-## Principles
+## How it works
 
-1. Adopt existing runtimes; do not invent schedulers, coding harnesses or GitOps.
-2. Model outputs and issue content never grant execution privileges.
-3. Verified delivery requires independent evidence pinned to an exact commit.
-4. Keep owner-specific infrastructure, secrets and commercial modules outside this repository.
+- **Owner:** sets policy and retains approval authority.
+- **Steward:** an optional owner-facing assistant, possibly across repositories.
+- **Chief of Staff:** one designated repository supervisor; triages work, coordinates Leads, and drives verified backlog closure.
+- **Leads:** own domains, make scoped technical decisions, delegate and verify results.
+- **Subagents:** execute one bounded task and return evidence to their Lead.
+
+Keep cross-Lead communication vertical through the CoS. Encourage agents to report evidence-backed bugs and improvement opportunities, deduplicate issues, and avoid expanding assigned work silently.
+
+## Bring your own stack
+
+| Responsibility | Example |
+| --- | --- |
+| Organization | Kovan role files |
+| Agent execution | OpenCode |
+| Work state | GitHub issues and PRs |
+| Events and reconciliation | GitHub Actions |
+| Tools | MCP servers |
+| Verification | Required CI and independent PR review |
+
+The convention does not grant credentials or permissions. Enforce authority outside prompts, keep task state durable, and verify actual outcomes before closing work.
+
+## Status
+
+**Draft convention; not a runtime release.** Repository-role loading, persistent-session recovery, event delivery, and cutover still need validation in a real deployment. No Kovan daemon, scheduler, or CLI is required or shipped by this proposal.
+
+Earlier pre-alpha policy and execution-verification experiments remain in repository history and open branches/PRs; they are not prerequisites or an active implementation commitment for this direction.
+
+- [Specification](SPEC.md)
+- [Architecture and boundaries](docs/architecture.md)
+- [Minimal example](examples/minimal/README.md)
+- [Contribution guidelines](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
 
 ## License
 
