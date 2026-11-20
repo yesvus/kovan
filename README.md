@@ -8,7 +8,7 @@ Kovan is a lightweight convention, not another agent harness or orchestration se
 
 ```mermaid
 flowchart TD
-    O[Owner] <--> S[Steward]
+    O[Owner] <--> S[Optional Steward]
     S <--> C[Repository Chief of Staff]
     C <--> L1[Platform Lead]
     C <--> L2[Application Lead]
@@ -55,7 +55,7 @@ Keep cross-Lead communication vertical through the CoS. Encourage agents to repo
 | Work state | GitHub issues and PRs |
 | Events and reconciliation | GitHub Actions |
 | Tools | MCP servers |
-| Verification | Required CI and independent PR review |
+| Verification | Required CI and independent PR review pinned to the exact commit |
 
 The convention does not grant credentials or permissions. Enforce authority outside prompts, keep task state durable, and verify actual outcomes before closing work.
 
