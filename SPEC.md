@@ -49,7 +49,7 @@ Use the existing issue tracker as the durable backlog and source of acceptance c
 Kovan adopts a conventional PR-based delivery loop, using the repository's existing CI and independent reviewer rather than a new workflow engine.
 
 1. Lead decomposes eligible work into bounded, independently deliverable assignments, delegates parallel ephemeral Subagents where safe, and serializes overlapping edits or dependencies. One task, branch and worktree per assignment; bounded concurrency.
-2. Subagent implements, tests, commits and opens its own **Draft PR** when its scoped identity is verified to permit this. Otherwise Lead publishes its result. Link the canonical issue and acceptance criteria. Native child sessions alone do not establish separate permissions; use existing enforced per-task identity/capability boundaries before allowing direct writes.
+2. Subagent implements, tests, commits and opens its own **Draft PR** when its scoped identity is verified to permit this. Otherwise Lead publishes its result. Link the canonical issue and acceptance criteria. Native child sessions alone do not establish separate permissions. In a trusted single-owner development domain, a shared repository-scoped Developer identity is reasonable; use task scope and worktree ownership for coordination, and actual repository protections for authority. Require stronger per-task isolation only for distinct trust domains or demonstrated risks.
 3. Subagent follows required CI, fixes failures in scope, and reports exact current-head green evidence. After checks pass and the implementation is ready, mark the PR ready for review through the authorized actor; verify the current-head reviewer actually runs (do not assume draft transition alone triggers every configured reviewer).
 4. Independent reviewer publishes findings and verdict. Lead receives the result and evaluates findings, assigns valid fixes back to the Subagent, and documents reasoned disagreements through the repository's review mechanism. Never let a worker self-approve or silently dismiss required blocking findings.
 5. Subagent updates the same PR, waits for current-head required CI, then returns for independent review. Repeat only as needed; stale verdicts/checks do not authorize a changed head. Escalate nonconvergent or blocked review to CoS rather than loop indefinitely.
@@ -63,7 +63,7 @@ Agents should proactively record concrete defects, security and reliability risk
 
 ## 7. Security and verification
 
-Role Markdown and task input cannot grant privileges. Use independently enforced credentials, permissions, branch protections and approval gates. A task worktree isolates code, not credentials. Verify current-head CI/review, approvals and actual acceptance before closure or delivery. Avoid exposing sensitive data. Enforce one authoritative supervisor per repository, verified seat handover and bounded concurrency.
+Role Markdown and task input cannot grant privileges. Use existing scoped credentials, permissions, branch protections and approval gates. Prefer proportional, risk-based safeguards; do not mandate a custom authorization layer or isolated runtime for every trusted child. A task worktree isolates code, not credentials. Verify current-head CI/review, approvals and actual acceptance before closure or delivery. Avoid exposing sensitive data. Enforce one authoritative supervisor per repository, verified seat handover and bounded concurrency.
 
 ## 8. Adoption
 
