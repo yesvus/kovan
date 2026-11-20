@@ -61,7 +61,7 @@ Lead owns implementation/review follow-through. CoS coordinates between Leads, m
 
 ## 6. Proactive issue discovery
 
-Agents should proactively record concrete defects, security and reliability risks, technical debt, and actionable improvements found during execution. This is a judgment call, not a checklist; when in doubt, record it. Mark such issues with one repository-defined discovery label (for example `found-while-working`) so CoS can triage them as a stream. Search canonical issues first. Record redacted evidence, impact and a bounded desired outcome or reproduction. Do not silently expand the current task. Escalate critical findings promptly to the supervising role. Direct filing requires an approved scoped identity; otherwise report to the supervisor to file. CoS triages new work instead of blindly dispatching every issue.
+Agents should proactively record concrete defects, security and reliability risks, technical debt, and actionable improvements found during execution. This is a judgment call, not a checklist; when in doubt, record it. Mark such issues with one discovery label so CoS can triage them as a stream: `found-while-working` by default, or the label the repository names in its AGENTS.md. Search canonical issues first. Record redacted evidence, impact and a bounded desired outcome or reproduction. Do not silently expand the current task. Escalate critical findings promptly to the supervising role. Direct filing requires an approved scoped identity; otherwise report to the supervisor to file. CoS triages new work instead of blindly dispatching every issue.
 
 ## 7. Security and verification
 
